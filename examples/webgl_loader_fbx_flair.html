@@ -25,16 +25,13 @@
 		<script type="module">
 
 			import * as THREE from 'three';
-
 			import Stats from 'three/addons/libs/stats.module.js';
-
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 			import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-
 			// ---------------------------------------------------------------------
 			import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
-			import { Audio, AudioListener, AudioLoader } from 'three';
+			import { Audio, AudioListener, AudioLoader, TextureLoader } from 'three';
 			// ---------------------------------------------------------------------
 
 			const manager = new THREE.LoadingManager();
@@ -45,14 +42,12 @@
 			const clock = new THREE.Clock();
 
 			const params = {
-				asset: 'Flair'
+				asset: 'HipHopDancing'
 			};
 
 			const assets = [
-				'Flair',
-				'morph_test'
+				'HipHopDancing',
 			];
-
 
 			init();
 
@@ -66,8 +61,10 @@
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xa0a0a0 );
-				scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+				// Bruma azul oscura (efecto adicional)
+				scene.fog = new THREE.Fog(0x555577, 150, 800);
 
+				// Luces
 				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444, 5 );
 				hemiLight.position.set( 0, 200, 0 );
 				scene.add( hemiLight );
@@ -81,16 +78,20 @@
 				dirLight.shadow.camera.right = 120;
 				scene.add( dirLight );
 
-				// scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+				// Piso con textura rocosa (efecto adicional)
+				const textureLoader = new TextureLoader();
+				const floorTexture = textureLoader.load('models/rgbe/textures/piso.jpg');
+				floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+				floorTexture.repeat.set( 20, 20 );
 
-				// ground
-				const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
-				mesh.rotation.x = - Math.PI / 2;
+				const floorMaterial = new THREE.MeshPhongMaterial({ map: floorTexture });
+				const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), floorMaterial);
+				mesh.rotation.x = -Math.PI / 2;
 				mesh.receiveShadow = true;
-				scene.add( mesh );
+				scene.add(mesh);
 
 				const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
-				grid.material.opacity = 0.2;
+				grid.material.opacity = 0.1;
 				grid.material.transparent = true;
 				scene.add( grid );
 			
@@ -116,35 +117,54 @@
 
 				const gui = new GUI();
 				gui.add( params, 'asset', assets ).onChange( function ( value ) {
-
 					loadAsset( value );
-
 				} );
 
 				guiMorphsFolder = gui.addFolder( 'Morphs' ).hide();
 
 				// --------------------------------------------------------------
+				// Escenario HDR tipo cueva
 				const rgbeLoader = new RGBELoader();
-				rgbeLoader.load('models/rgbe/blue_hour_8k.hdr', function (texture) {
+				rgbeLoader.load('models/rgbe/newman_lobby_4k.hdr', function (texture) {
 					texture.mapping = THREE.EquirectangularReflectionMapping;
 					scene.background = texture;
 					scene.environment = texture;
 				});
 
+				// Música de fondo medieval
 				const listener = new AudioListener();
 				camera.add(listener);
 
 				const sound = new Audio(listener);
 				const audioLoader = new AudioLoader();
-				audioLoader.load('models/rgbe/Snow-Informer.mp3', function (buffer) {
-					console.log("Audio cargado exitosamente");
+				audioLoader.load('models/rgbe/musica.mp3', function (buffer) {
+					console.log("Audio disco cargado exitosamente");
 					sound.setBuffer(buffer);
 					sound.setLoop(true);
-					sound.setVolume(0.5);
-					sound.play();
+					sound.setVolume(0.6);
+
+					// Botón para iniciar la música
+					const playButton = document.createElement('button');
+					playButton.textContent = "Reproducir música";
+					playButton.style.position = 'absolute';
+					playButton.style.top = '200px';
+					playButton.style.right = '20px';
+					playButton.style.padding = '10px 20px';
+					playButton.style.fontSize = '16px';
+					playButton.style.cursor = 'pointer';
+					playButton.style.zIndex = '100';
+					playButton.style.background = 'rgba(0,0,0,0.5)';
+					playButton.style.color = 'white';
+					playButton.style.border = '1px solid white';
+					playButton.style.borderRadius = '8px';
+					document.body.appendChild(playButton);
+
+					playButton.addEventListener('click', () => {
+						sound.play();
+						playButton.remove();
+					});
 				});
 				// --------------------------------------------------------------
-
 			}
 
 			function loadAsset( asset ) {
@@ -175,8 +195,6 @@
 
 					}
 
-					//
-
 					object = group;
 
 					if ( object.animations && object.animations.length ) {
@@ -200,13 +218,13 @@
 						if ( child.isMesh ) {
 
 							// -----------------------------------------------------------
-							// Aplicar un material de agua o translúcido al modelo
+							// Textura metálica brillante (modelo FBX)
 							child.material = new THREE.MeshStandardMaterial({
-								color: 0xff3300,  // Color rojo acuático
+								color: 0xaaa066,   // tono cálido tipo bronce
 								transparent: true,
-								opacity: 0.9,
-								roughness: 0.5,
-								metalness: 0.7
+								opacity: 0.95,
+								roughness: 0.4,
+								metalness: 0.8
 							});
 							// -----------------------------------------------------------
 
@@ -244,8 +262,6 @@
 
 			}
 
-			//
-
 			function animate() {
 
 				const delta = clock.getDelta();
@@ -259,7 +275,5 @@
 			}
 
 		</script>
-
-
 	</body>
 </html>
